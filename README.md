@@ -67,7 +67,7 @@ flowchart LR
     subgraph Output["Output: the ranking"]
         O["sort by score, highest first"]
         K["take top k (default 5)"]
-        P["print title, score,<br/>'Because: …' reasons"]
+        P["print rank, title, score / 7.00,<br/>and a 'Why:' bullet per reason"]
     end
 
     C --> L --> F
@@ -77,7 +77,7 @@ flowchart LR
 ```
 
 1. **Input:** `main.py` builds the `user_prefs` dict, and `load_songs()` reads `songs.csv` into a list of dicts. Numeric fields are converted to `float`.
-2. **Process:** `recommend_songs()` runs `score_song()` on every song. Each call returns a `(score, reasons)` pair, where `reasons` lists what earned points, for example `"genre match (+2.0)"`. The songs are scored independently, so each score depends only on that song and the user.
+2. **Process:** `recommend_songs()` runs `score_song()` on every song. Each call returns a `(score, reasons)` pair, where `reasons` lists what earned points, for example `"genre match: pop (+2.0)"`. The songs are scored independently, so each score depends only on that song and the user.
 3. **Output:** the scored songs are sorted from highest to lowest score, the first `k` are kept, and each is returned as `(song, score, explanation)` for `main.py` to print.
 
 ---
@@ -119,16 +119,125 @@ You can add more tests in `tests/test_recommender.py`.
 
 ## Sample Recommendation Output
 
-Paste a sample of your recommender's output here as a text block so a reader can see what it produces:
+Output of `python -m src.main` for the default pop/happy profile and the late-night study (lofi/chill) profile:
 
 ```
-# e.g.:
-# User profile: genre=indie, mood=chill, energy=low
-# Recommendations:
-#   1. ...
-#   2. ...
-#   3. ...
+$ python -m src.main
+Loading songs from data/songs.csv...
+Loaded songs: 20
+
+========================================================================
+Profile: Default pop/happy
+  genre=pop  mood=happy  likes_acoustic=False
+  energy=0.8  valence=0.8  danceability=0.8  tempo=120 BPM
+========================================================================
+#1  Sunrise City - Neon Echo  [pop / happy]
+    Score: 6.76 / 7.00
+    Why:
+      + genre match: pop (+2.0)
+      + mood match: happy (+1.0)
+      + energy 0.82 vs target 0.8 (+1.47)
+      + valence 0.84 vs target 0.8 (+0.48)
+      + danceability 0.79 vs target 0.8 (+0.49)
+      + tempo_bpm 118 vs target 120 (+0.49)
+      + non-acoustic fit, acousticness 0.18 (+0.82)
+    --------------------------------------------------------------------
+#2  Gym Hero - Max Pulse  [pop / intense]
+    Score: 5.64 / 7.00
+    Why:
+      + genre match: pop (+2.0)
+      + energy 0.93 vs target 0.8 (+1.30)
+      + valence 0.77 vs target 0.8 (+0.48)
+      + danceability 0.88 vs target 0.8 (+0.46)
+      + tempo_bpm 132 vs target 120 (+0.44)
+      + non-acoustic fit, acousticness 0.05 (+0.95)
+    --------------------------------------------------------------------
+#3  Rooftop Lights - Indigo Parade  [indie pop / happy]
+    Score: 4.56 / 7.00
+    Why:
+      + mood match: happy (+1.0)
+      + energy 0.76 vs target 0.8 (+1.44)
+      + valence 0.81 vs target 0.8 (+0.49)
+      + danceability 0.82 vs target 0.8 (+0.49)
+      + tempo_bpm 124 vs target 120 (+0.48)
+      + non-acoustic fit, acousticness 0.35 (+0.65)
+    --------------------------------------------------------------------
+#4  Concrete Crown - Blocktide  [hip-hop / confident]
+    Score: 3.60 / 7.00
+    Why:
+      + energy 0.78 vs target 0.8 (+1.47)
+      + valence 0.62 vs target 0.8 (+0.41)
+      + danceability 0.86 vs target 0.8 (+0.47)
+      + tempo_bpm 94 vs target 120 (+0.37)
+      + non-acoustic fit, acousticness 0.12 (+0.88)
+    --------------------------------------------------------------------
+#5  Laser Bloom - Pulsewave  [edm / euphoric]
+    Score: 3.58 / 7.00
+    Why:
+      + energy 0.96 vs target 0.8 (+1.26)
+      + valence 0.88 vs target 0.8 (+0.46)
+      + danceability 0.93 vs target 0.8 (+0.43)
+      + tempo_bpm 128 vs target 120 (+0.46)
+      + non-acoustic fit, acousticness 0.03 (+0.97)
+
+========================================================================
+Profile: Late-night study (lofi/chill)
+  genre=lofi  mood=chill  likes_acoustic=True
+  energy=0.4  valence=0.6  danceability=0.55  tempo=80 BPM
+========================================================================
+#1  Library Rain - Paper Lanterns  [lofi / chill]
+    Score: 6.73 / 7.00
+    Why:
+      + genre match: lofi (+2.0)
+      + mood match: chill (+1.0)
+      + energy 0.35 vs target 0.4 (+1.42)
+      + valence 0.6 vs target 0.6 (+0.50)
+      + danceability 0.58 vs target 0.55 (+0.49)
+      + tempo_bpm 72 vs target 80 (+0.46)
+      + acoustic fit, acousticness 0.86 (+0.86)
+    --------------------------------------------------------------------
+#2  Midnight Coding - LoRoom  [lofi / chill]
+    Score: 6.62 / 7.00
+    Why:
+      + genre match: lofi (+2.0)
+      + mood match: chill (+1.0)
+      + energy 0.42 vs target 0.4 (+1.47)
+      + valence 0.56 vs target 0.6 (+0.48)
+      + danceability 0.62 vs target 0.55 (+0.47)
+      + tempo_bpm 78 vs target 80 (+0.49)
+      + acoustic fit, acousticness 0.71 (+0.71)
+    --------------------------------------------------------------------
+#3  Focus Flow - LoRoom  [lofi / focused]
+    Score: 5.75 / 7.00
+    Why:
+      + genre match: lofi (+2.0)
+      + energy 0.4 vs target 0.4 (+1.50)
+      + valence 0.59 vs target 0.6 (+0.49)
+      + danceability 0.6 vs target 0.55 (+0.48)
+      + tempo_bpm 80 vs target 80 (+0.50)
+      + acoustic fit, acousticness 0.78 (+0.78)
+    --------------------------------------------------------------------
+#4  Spacewalk Thoughts - Orbit Bloom  [ambient / chill]
+    Score: 4.55 / 7.00
+    Why:
+      + mood match: chill (+1.0)
+      + energy 0.28 vs target 0.4 (+1.32)
+      + valence 0.65 vs target 0.6 (+0.47)
+      + danceability 0.41 vs target 0.55 (+0.43)
+      + tempo_bpm 60 vs target 80 (+0.40)
+      + acoustic fit, acousticness 0.92 (+0.92)
+    --------------------------------------------------------------------
+#5  Coffee Shop Stories - Slow Stereo  [jazz / relaxed]
+    Score: 3.74 / 7.00
+    Why:
+      + energy 0.37 vs target 0.4 (+1.46)
+      + valence 0.71 vs target 0.6 (+0.45)
+      + danceability 0.54 vs target 0.55 (+0.49)
+      + tempo_bpm 90 vs target 80 (+0.45)
+      + acoustic fit, acousticness 0.89 (+0.89)
 ```
+
+**Does pop/happy match expectations?** Mostly. *Sunrise City* is the only song that is both pop and happy, and it ranks #1 by more than a full point. Places #4 and #5 go to songs with no label match, *Concrete Crown* and *Laser Bloom*, which make sense as upbeat, danceable, non-acoustic tracks. The surprise is #2: *Gym Hero* (pop / intense) beats *Rooftop Lights* (indie pop / happy), even though Rooftop Lights is closer on mood, energy, valence and tempo. This is the genre over-weighting predicted in [Expected Biases](#expected-biases). The exact genre match earns +2.0, while "indie pop" earns nothing for genre.
 
 **Screenshot or video** *(optional)*: <!-- Insert a screenshot or demo video link here -->
 
