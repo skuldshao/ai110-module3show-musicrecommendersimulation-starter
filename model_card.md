@@ -68,29 +68,64 @@ Prompts:
 
 ## 6. Limitations and Bias 
 
-Where the system struggles or behaves unfairly. 
-
-Prompts:  
-
-- Features it does not consider  
-- Genres or moods that are underrepresented  
-- Cases where the system overfits to one preference  
-- Ways the scoring might unintentionally favor some users  
+**Listeners who want medium energy get pushed to one extreme.** The catalog has no songs with energy between 0.55 and 0.75, and the two sides differ in more than loudness: every loud song is electronic, and almost every calm song is acoustic. Because the energy rule only scores the gap to the user's target, someone who wants 0.65 energy sees every song earn between 0.85 and 1.35 of the 1.5 energy points, so energy barely separates the songs, while the acoustic rule can still swing a full point. When I tested a medium-energy listener who doesn't like acoustic music, all five picks were loud, including *Storm Runner* (0.91) and *Gym Hero* (0.93), while *Dusty Highway Home* (0.55), just as close on energy as the #1 pick and the closest on tempo, came 9th. With `likes_acoustic` switched to true, the same listener got five calm songs instead, so the true/false acoustic setting, not the energy target, decides whether an in-between listener hears calm or loud music.
 
 ---
 
 ## 7. Evaluation  
 
-How you checked whether the recommender behaved as expected. 
+**Profiles I tested.** I ran nine listeners through the same 20 songs. Three are everyday listeners: a pop/happy fan, a late-night lofi study listener, and a deep intense rock fan. Six are "trick" profiles, built to catch the scoring off guard: conflicting preferences, a genre typo, a setting given as the wrong data type, impossible numbers, and a brand-new user with no preferences at all. The full terminal output for every profile is in the README's [Stress Test](README.md#stress-test-diverse-and-adversarial-profiles) section. While looking for bias I also tried one extra listener who wants medium energy (section 6). I ran one experiment that changed the weights (README, [Experiments You Tried](README.md#experiments-you-tried)).
 
-Prompts:  
+**What I looked for.** For each list I asked four questions. Does the #1 song match my own sense of what this listener wants? Can I explain the #1 song using only the scoring rules? Does the same song keep showing up for very different listeners? When two listeners differ on one setting, does the list change the way I'd expect?
 
-- Which user profiles you tested  
-- What you looked for in the recommendations  
-- What surprised you  
-- Any simple tests or comparisons you ran  
+**Results that matched my intuition.**
 
-No need for numeric metrics unless you created some.
+- **Pop/happy:** *Sunrise City* is the only song that is both pop and happy, and it wins by more than a full point.
+- **Late-night study:** *Library Rain* and *Midnight Coding* take #1 and #2. Both are calm, acoustic lofi tracks, and either would be a good pick for studying.
+- **Deep intense rock:** *Storm Runner*, the only rock song, wins with 6.80 out of 7.
+
+**Comparing profiles side by side.** Each comment below compares two profiles' top 5 lists: what changed, and whether that change makes sense. I compared the three everyday listeners with each other, then compared each trick profile with the normal profile closest to it.
+
+*Everyday listeners*
+
+- **Pop/happy vs. late-night study:** The two lists share no songs. The pop fan gets loud, danceable, electronic songs (average energy 0.85), and the study listener gets quiet, mostly acoustic ones (average energy 0.36). This makes sense, because the two profiles ask for opposite things on almost every setting, including whether they like acoustic sound.
+- **Pop/happy vs. deep intense rock:** Both lists are loud and electronic, so they share two songs, *Gym Hero* and *Laser Bloom*. The difference is happiness. The pop list is full of bright, happy songs. The rock list brings in darker ones like *Iron Cathedral* (angry metal) and *Night Drive Loop* (moody synthwave). This makes sense: the rock fan asked for the same loudness but much less happiness (0.4 instead of 0.8). *Gym Hero* gets into both lists for different reasons: its pop label for the pop fan, and its "intense" mood for the rock fan.
+- **Late-night study vs. deep intense rock:** No shared songs, as expected for opposite listeners. The more telling difference is how fast the scores drop. The study listener's top three are all lofi and within one point of each other (6.73 to 5.75), because the catalog has three lofi songs. The rock fan's #1 scores 6.80, but #2 drops to 4.49, because there is only one rock song. After that, the system can only fill the list with songs that sound similar. That is a gap in the catalog, not a mistake in the scoring.
+
+*Trick profiles vs. the closest normal profile*
+
+- **High energy + sad vs. deep intense rock:** The same five songs, just in a different order. Asking for "sad" instead of "rock/intense" barely mattered, because no loud song in the catalog is sad, so the mood word had nothing to match. The one real change, *Iron Cathedral* moving up to #1, comes from the lower happiness target (0.2 instead of 0.4): it is the darkest song in the catalog. The numbers add up, but it shows that the system can quietly ignore what a listener asks for in words (see Surprise 1 below).
+- **Metal genre with calm numbers vs. late-night study:** Three of the five songs are the same (*Spacewalk Thoughts*, *Library Rain* and *Coffee Shop Stories*), and no metal song appears at all. Asking for metal changed almost nothing, because every other setting describes quiet, acoustic music, and the only metal song is the loudest one in the catalog. On the scorecard this makes sense: the 2-point genre prize can't make up for losing on every measurement. But a real person who typed "metal" would be confused by this list.
+- **"Hip Hop" typo vs. "hip-hop" spelled correctly:** The same five songs in the same order, and *Concrete Crown* stays #1. The only difference is its score: 4.83 instead of 6.83. To the computer, a space instead of a hyphen is a different genre, so the 2-point genre prize disappears. The ranking held only because *Concrete Crown* fits so well on everything else. In a closer race, the typo could have pushed the right song down.
+- **Acoustic setting given as the word "False" vs. a real "no":** *Laser Bloom* stays #1, but its score drops from 6.92 to 5.99. *Storm Runner* falls out of the top 5, and *Rooftop Lights*, the most acoustic of the upbeat songs, jumps to #2. The program reads any word typed into that setting, even "False", as a yes, so this EDM fan gets treated like someone who loves acoustic sound. The damage is small here only because the catalog has no loud acoustic songs to promote.
+- **Impossible numbers vs. deep intense rock:** Four of the five songs are the same, but the impossible-numbers list is simply sorted from loudest to quietest (energy 0.98 down to 0.82), and every score is under 1 out of 7. Impossible danceability and tempo targets give every song zero points for those settings, so energy is the only setting left to tell songs apart. That is the correct math, but the system should have warned that the input made no sense.
+- **Empty profile vs. pop/happy:** Both lists start with *Sunrise City*, for completely different reasons. The pop fan gets it because it is the best match (6.76 out of 7). The empty profile gets it because it is the first song in the file (0.00). With no preferences, every song ties, and ties keep their file order, so these "recommendations" are just the first five songs in the file.
+
+**Why does *Gym Hero* keep showing up for people who just want happy pop?** Think of the scorecard from section 3. *Gym Hero* is labeled "pop", so it collects the biggest single prize: 2 points for matching your favorite genre. Its mood is "intense", not "happy", so it misses the mood prize, but that prize is only worth 1 point. Compare *Rooftop Lights*, which most people would call a better fit. It is a happy song, but it is labeled "indie pop", and the judge only gives the genre prize when the label matches word for word. So *Rooftop Lights* gets the 1-point mood prize and nothing for genre.
+
+On everything the judge can measure, the two songs are almost tied (3.64 points to 3.56). *Rooftop Lights* is closer to the energy, happiness, danceability and tempo the listener asked for. *Gym Hero* earns a little more for sounding fully electronic. So the whole one-point gap between them comes from the labels: a "pop" label is worth twice as much as a "happy" label, and "indie pop" doesn't count as pop. In plain terms, the system trusts the name on the box more than how the song actually feels.
+
+*Gym Hero* also shows up well beyond pop: it is in the top 5 for 7 of my 9 profiles, even though it gets the genre prize only once. It is the catalog's all-purpose loud song. It is very energetic (0.93), very danceable (0.88) and almost entirely electronic, so anyone who asks for loud, non-acoustic music finds it close to what they asked for, whatever genre they named. Five of my nine profiles want loud music, which inflates that count. In two of the seven lists, it appears for reasons that have nothing to do with taste: its position in the song file (the empty profile) and its raw loudness (the impossible-numbers profile).
+
+**Surprise 1: a metal song is the top pick for a "sad" listener.** One trick profile asks for a sad mood, but also for loud, fast, non-acoustic music. The #1 pick was *Iron Cathedral*, an angry metal song. The only sad song in the catalog, *Pinewood Letters*, came 9th. Here is how the points added up:
+
+| Rule | #1 *Iron Cathedral* | #2 *Storm Runner* | #9 *Pinewood Letters* |
+|---|---|---|---|
+| Mood is "sad" (+1.0) | 0 | 0 | +1.00 |
+| Energy (target 0.9) | +1.38 | +1.48 | +0.60 |
+| Happiness/valence (target 0.2) | +0.49 | +0.36 | +0.47 |
+| Danceability (target 0.5) | +0.47 | +0.42 | +0.45 |
+| Tempo (target 150 BPM) | +0.41 | +0.49 | +0.19 |
+| Not acoustic | +0.96 | +0.90 | +0.09 |
+| **Total** | **3.72** | **3.65** | **2.80** |
+
+No loud song in the catalog is tagged "sad", so the mood point was out of reach for every song that fit the energy. The race came down to the numbers. *Iron Cathedral* won because it is the darkest song in the catalog: its happiness score (valence) of 0.22 almost exactly matches the 0.2 target. It beat *Storm Runner* by only 0.07 points, which is basically a coin flip. *Pinewood Letters* earned the mood point, but it is quiet and acoustic. Energy and acoustic fit together are worth 2.5 of the 7 points, so it fell far behind.
+
+This feels only partly right. The low happiness target is the number version of "sad", and the system did respect it by picking the darkest loud song. But angry metal is not sad music. Someone who wants energetic sad songs is probably thinking of something like emo, and the catalog has nothing like that. The system just hands over the closest match by the numbers and never says that nothing really fit. The best score was only 3.72 out of 7.
+
+**Surprise 2: acoustic fit decides close calls.** For the study listener, *Library Rain* (6.73) beat *Midnight Coding* (6.62), even though *Midnight Coding* is closer on energy and tempo. *Library Rain* won on acoustic fit alone (+0.86 vs. +0.71). Acoustic fit is the only rule where "more is better" instead of "closer is better", so for anyone who likes acoustic music, the most acoustic song always gets a boost.
+
+**Surprise 3: no single song wins everywhere.** The nine profiles produced seven different #1 songs, so the genre prize is not strong enough to push one song to the top of every list. The repetition happens further down the list instead, as the *Gym Hero* explanation above shows.
 
 ---
 
