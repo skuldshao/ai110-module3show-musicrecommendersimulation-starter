@@ -4,7 +4,12 @@ Core logic for the Music Recommender Simulation.
 Pipeline (see "Data Flow" in README.md):
     load_songs()      read data/songs.csv into a list of song dicts
     score_song()      judge ONE song against the user's preferences -> (score, reasons)
+    explain_reasons() join those reasons into the one-line explanation users see
     recommend_songs() judge EVERY song, sort highest first, return the top k
+
+The CLI (src/main.py) uses the functions above. The Recommender class offers the
+same scoring as an object-oriented interface over Song / UserProfile dataclasses,
+which is what tests/test_recommender.py exercises.
 
 All scoring weights live in the constants below, so experiments only need to edit
 this block rather than the functions. The Step 3 "Weight Shift" experiment is one
@@ -198,7 +203,9 @@ def load_songs(csv_path: str) -> List[Dict]:
 def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
     """Score one song against the user's preferences and return (score, reasons).
 
-    Called by recommend_songs() once per song in the catalog.
+    Called once per song by recommend_songs() (the CLI path) and by
+    Recommender.recommend() / explain_recommendation() (the OOP path), so both
+    paths always use the same rules and weights.
 
     Implements the Algorithm Recipe from the README (max 7.0 points):
         - +2.0 if genre matches favorite_genre, +1.0 if mood matches favorite_mood

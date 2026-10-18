@@ -2,16 +2,17 @@
 
 ## Project Summary
 
-In this project you will build and explain a small music recommender system.
+**TuneJudge 1.0** is a small music recommender that runs in the terminal. You describe a listener's taste, and it scores all 20 songs in `data/songs.csv` with a simple points system (out of 7.0). Then it prints the top 5, with a reason for every point awarded. A listener's taste has four parts:
 
-Your goal is to:
+- a favorite genre and mood
+- target energy, happiness, danceability and tempo
+- whether they like acoustic sound
 
-- Represent songs and a user "taste profile" as data
-- Design a scoring rule that turns that data into recommendations
-- Evaluate what your system gets right and wrong
-- Reflect on how this mirrors real world AI recommenders
+On top of the basic recommender, this version:
 
-Replace this paragraph with your own summary of what your version does.
+- **Stress-tests the scoring** with 3 everyday listeners and 6 trick profiles built to break it ([Stress Test](#stress-test-diverse-and-adversarial-profiles)).
+- **Runs a weight-shift experiment** that can be switched on with one line of code ([Experiments You Tried](#experiments-you-tried)).
+- **Documents the biases it found** in the [model card](model_card.md). The main one: a gap in the catalog pushes medium-energy listeners toward very calm or very loud songs.
 
 ---
 
@@ -240,7 +241,7 @@ Profile: Late-night study (lofi/chill)
 
 **Does pop/happy match expectations?** Mostly. *Sunrise City* is the only song that is both pop and happy, and it ranks #1 by more than a full point. Places #4 and #5 go to songs with no label match, *Concrete Crown* and *Laser Bloom*, which make sense as upbeat, danceable, non-acoustic tracks. The surprise is #2: *Gym Hero* (pop / intense) beats *Rooftop Lights* (indie pop / happy), even though Rooftop Lights is closer on mood, energy, valence and tempo. This is the genre over-weighting predicted in [Expected Biases](#expected-biases). The exact genre match earns +2.0, while "indie pop" earns nothing for genre.
 
-**Screenshot or video** *(optional)*: <!-- Insert a screenshot or demo video link here -->
+**Screenshot or video** *(optional)*: not included. The terminal output above and in the Stress Test section is pasted as text, so it can be searched and compared.
 
 ---
 
@@ -923,28 +924,31 @@ Profile: Deep intense rock
 
 ## Limitations and Risks
 
-Summarize some limitations of your recommender.
+- **Tiny, made-up catalog.** There are 20 fictional songs with hand-picked numbers, and 15 of the 17 genres have only one song. A rock fan gets one rock song, then songs that only sound similar.
+- **No real understanding of music.** It only sees two labels and five numbers per song. It knows nothing about lyrics, language or artists, or about what anyone actually listens to.
+- **Trusts labels too much, and too literally.** The genre prize can beat a better-fitting song (*Gym Hero* over *Rooftop Lights* for a happy-pop fan), and "indie pop" gets no credit for "pop".
+- **Gaps in the catalog shape the results.** No song has medium energy, and loud songs are always electronic. So a medium-energy listener is pushed to one extreme by a yes/no acoustic setting.
+- **Fails silently.** It never says when nothing fits or when it ignored part of a request. It accepts bad input like the word "False" or an energy of 1.5. Brand-new users just get the first five songs in the file.
+- **One set of weights for everyone.** I picked the weights by hand, and no listener can say "mood matters more to me than genre".
 
-Examples:
-
-- It only works on a tiny catalog
-- It does not understand lyrics or language
-- It might over favor one genre or mood
-
-You will go deeper on this in your model card.
+More detail is in the [model card](model_card.md), section 6.
 
 ---
 
 ## Reflection
 
-Read and complete `model_card.md`:
+[**Model Card**](model_card.md): the full write-up, including my personal reflection in section 9.
 
-[**Model Card**](model_card.md)
+**How recommenders turn data into predictions.** TuneJudge doesn't understand music. It turns every song into two labels and five numbers, turns my taste into targets, hands out points for each match, and sorts. Its "prediction" is just "these songs are closest to what you described". The real model is the weights. When I doubled the energy weight and halved the genre weight, one bad result was fixed and two new ones appeared. Every weight is a trade-off between listeners. Even so, the output feels like a real recommendation. I think the "Why:" lines do much of that work, because they make plain arithmetic look thought through.
 
-Write 1 to 2 paragraphs here about what you learned:
+**Where bias and unfairness show up.** Mostly in places I didn't expect, and mostly without any warning:
 
-- about how recommenders turn data into predictions
-- about where bias or unfairness could show up in systems like this
+- **In the data:** the missing medium-energy songs, and a catalog where calm always means acoustic, decide what in-between listeners hear.
+- **In the labels:** an exact-match rule means "indie pop" fans and anyone with a typo lose points.
+- **In the weights:** a genre label can beat how a song actually feels.
+- **For artists:** in a simulation of 5,000 random listeners, some songs reached about 38% of them and others only about 13%, just because of how they sound or which genre they share.
+
+The system also sounds just as confident when it is guessing. It gave a "sad" listener angry metal with neat reasons and never said that nothing really fit. Real apps are far bigger, but I expect the same problems there, only harder to see.
 
 
 
